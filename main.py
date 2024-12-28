@@ -1,8 +1,11 @@
 import sqlite3
+import tkinter as tk
 from tkinter import Tk, Label, Button, OptionMenu, StringVar, IntVar, Frame
-import tkinter.messagebox as messagebox
 from tkinter.ttk import Treeview
 import tkinter.ttk as ttk
+
+# 初始化shopping_cart为一个空列表，代表初始时购物车为空
+shopping_cart = []
 
 # 定义奶茶商品类
 class MilkTeaProduct:
@@ -73,16 +76,19 @@ def get_products_from_database():
 
 # 从数据库获取购物车数据的函数
 def get_shopping_cart_from_database():
+    global shopping_cart
     conn = sqlite3.connect('milk_tea.db')
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM shopping_cart')
     cart_data = cursor.fetchall()
+    shopping_cart = [list(item) for item in cart_data]  # 将获取的数据转换为列表形式赋值给shopping_cart
     conn.close()
-    return cart_data
+    return shopping_cart
 
 
 # 将商品加入购物车并更新数据库的函数
 def add_to_cart(product_id):
+    product_name = ""  # 初始化product_name变量
     conn = sqlite3.connect('milk_tea.db')
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM shopping_cart WHERE product_id=?', (product_id,))
@@ -97,8 +103,21 @@ def add_to_cart(product_id):
         cursor.execute('INSERT INTO shopping_cart (product_id, product_name, price, quantity) VALUES (?,?,?, 1)', (product_id, product_name, price))
     conn.commit()
     conn.close()
+    # 更新shopping_cart列表，使其与数据库数据一致
+    get_shopping_cart_from_database()
     update_shopping_cart()
-    messagebox.showinfo("提示", f"{product_name} 已加入购物车", font=("Arial", 12))
+
+    # 创建自定义消息框窗口
+    msg_box = tk.Toplevel()
+    msg_box.title("提示")
+    msg_box.geometry("200x100")
+    msg_box.configure(bg="white")
+
+    msg_label = tk.Label(msg_box, text=f"{product_name} 已加入购物车", font=("Arial", 12))
+    msg_label.pack(pady=10)
+
+    ok_btn = tk.Button(msg_box, text="确定", command=msg_box.destroy)
+    ok_btn.pack()
 
 
 # 分类显示商品函数，从数据库获取商品数据后展示
@@ -133,6 +152,7 @@ def update_shopping_cart():
 
 # 从购物车减少商品数量或者移除商品（数量减为0时移除），并更新数据库
 def adjust_cart():
+    product_name = ""  # 初始化product_name变量
     selected_item = cart_list.selection()
     if selected_item:
         item_data = cart_list.item(selected_item)
@@ -149,14 +169,38 @@ def adjust_cart():
             cursor.execute('UPDATE shopping_cart SET quantity=? WHERE cart_id=?', (new_quantity, cart_id))
         conn.commit()
         conn.close()
+        # 更新shopping_cart列表，使其与数据库数据一致
+        get_shopping_cart_from_database()
         update_shopping_cart()
-        messagebox.showinfo("提示", f"{product_name} 数量已调整", font=("Arial", 12))
+
+        # 创建自定义消息框窗口
+        msg_box = tk.Toplevel()
+        msg_box.title("提示")
+        msg_box.geometry("200x100")
+        msg_box.configure(bg="white")
+
+        msg_label = tk.Label(msg_box, text=f"{product_name} 数量已调整", font=("Arial", 12))
+        msg_label.pack(pady=10)
+
+        ok_btn = tk.Button(msg_box, text="确定", command=msg_box.destroy)
+        ok_btn.pack()
     else:
-        messagebox.showerror("错误", "未选中购物车中的商品，请重新选择。", font=("Arial", 12))
+        # 创建自定义错误提示消息框窗口
+        msg_box = tk.Toplevel()
+        msg_box.title("错误")
+        msg_box.geometry("250x100")
+        msg_box.configure(bg="white")
+
+        msg_label = tk.Label(msg_box, text="未选中购物车中的商品，请重新选择。", font=("Arial", 12))
+        msg_label.pack(pady=10)
+
+        ok_btn = tk.Button(msg_box, text="确定", command=msg_box.destroy)
+        ok_btn.pack()
 
 
 # 增加购物车中商品数量功能，并更新数据库
 def increase_cart_quantity():
+    product_name = ""  # 初始化product_name变量
     selected_item = cart_list.selection()
     if selected_item:
         item_data = cart_list.item(selected_item)
@@ -170,10 +214,33 @@ def increase_cart_quantity():
         cursor.execute('UPDATE shopping_cart SET quantity=? WHERE cart_id=?', (new_quantity, cart_id))
         conn.commit()
         conn.close()
+        # 更新shopping_cart列表，使其与数据库数据一致
+        get_shopping_cart_from_database()
         update_shopping_cart()
-        messagebox.showinfo("提示", f"{product_name} 数量已增加", font=("Arial", 12))
+
+        # 创建自定义消息框窗口
+        msg_box = tk.Toplevel()
+        msg_box.title("提示")
+        msg_box.geometry("200x100")
+        msg_box.configure(bg="white")
+
+        msg_label = tk.Label(msg_box, text=f"{product_name} 数量已增加", font=("Arial", 12))
+        msg_label.pack(pady=10)
+
+        ok_btn = tk.Button(msg_box, text="确定", command=msg_box.destroy)
+        ok_btn.pack()
     else:
-        messagebox.showerror("错误", "未选中购物车中的商品，请重新选择。", font=("Arial", 12))
+        # 创建自定义错误提示消息框窗口
+        msg_box = tk.Toplevel()
+        msg_box.title("错误")
+        msg_box.geometry("250x100")
+        msg_box.configure(bg="white")
+
+        msg_label = tk.Label(msg_box, text="未选中购物车中的商品，请重新选择。", font=("Arial", 12))
+        msg_label.pack(pady=10)
+
+        ok_btn = tk.Button(msg_box, text="确定", command=msg_box.destroy)
+        ok_btn.pack()
 
 
 # 模拟支付功能（这里只是简单打印提示，并清空购物车相关数据库表）
@@ -185,11 +252,32 @@ def checkout():
     conn.commit()
     conn.close()
     if shopping_cart:
-        messagebox.showinfo("提示", "支付成功，感谢您的购买！", font=("Arial", 12))
+        # 创建自定义消息框窗口
+        msg_box = tk.Toplevel()
+        msg_box.title("提示")
+        msg_box.geometry("200x100")
+        msg_box.configure(bg="white")
+
+        msg_label = tk.Label(msg_box, text="支付成功，感谢您的购买！", font=("Arial", 12))
+        msg_label.pack(pady=10)
+
+        ok_btn = tk.Button(msg_box, text="确定", command=msg_box.destroy)
+        ok_btn.pack()
+
         shopping_cart = []
         update_shopping_cart()
     else:
-        messagebox.showwarning("提示", "购物车为空，无需支付。", font=("Arial", 12))
+        # 创建自定义提示消息框窗口
+        msg_box = tk.Toplevel()
+        msg_box.title("提示")
+        msg_box.geometry("250x100")
+        msg_box.configure(bg="white")
+
+        msg_label = tk.Label(msg_box, text="购物车为空，无需支付。", font=("Arial", 12))
+        msg_label.pack(pady=10)
+
+        ok_btn = tk.Button(msg_box, text="确定", command=msg_box.destroy)
+        ok_btn.pack()
 
 
 root = Tk()
